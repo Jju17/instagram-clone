@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import * as ROUTES from "../constants/routes";
 import tw from "twin.macro";
+import FirebaseContext from "../context/firebase";
+
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 const Container = tw.div`container flex mx-auto max-w-screen-md items-center h-screen`;
 const LeftDiv = tw.div`flex w-3/5`;
@@ -30,15 +34,34 @@ const BottomDiv = tw.div`flex justify-center items-center flex-col w-full bg-whi
 //   - https://reactjs.org/docs/hooks-state.html
 
 export default function Login() {
+  const { firebase } = useContext(FirebaseContext);
+  const history = useHistory();
+
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  let isInValid = emailAddress === "" || password === "";
+  const isInValid = emailAddress === "" || password === "";
 
   useEffect(() => {
     document.title = "Log In";
   }, []);
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    const auth = getAuth();
+    signInWithEmailAndPassword(auth, emailAddress, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        history.push(ROUTES.DASHBOARD);
+      })
+      .catch((err) => {
+        setEmailAddress("");
+        setPassword("");
+        setError(err.message);
+      });
+  };
 
   return (
     <Container>
@@ -53,7 +76,8 @@ export default function Login() {
           <Title>
             <ImgLogo src="/images/logo.png" alt="Instagram" />
           </Title>
-          <form method="POST">
+          {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
+          <form method="POST" onSubmit={handleLogin}>
             <FormInput
               value={emailAddress}
               aria-label="Enter your email address"
